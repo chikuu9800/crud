@@ -1,0 +1,18 @@
+/* #productTable{
+    width: auto;
+    margin: auto;
+} */
+
+.t{
+    width: 600px;
+
+    margin:5% auto;
+}
+#addButton{
+margin: 10px;
+}
+
+#productForm{
+    width: 600px;
+    margin:5% auto;
+}
