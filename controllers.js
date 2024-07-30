@@ -1,54 +1,93 @@
-import connection from "./db.js";
+import { check, validationResult } from 'express-validator';
+import connection from './db.js';
+
+// Validation middlewares
+const validateProduct = [
+    check('id').isInt().withMessage('ID must be an integer'),
+    check('productId').isString().withMessage('Product ID must be a string'),
+    check('productName').isString().withMessage('Product Name must be a string'),
+    check('CategoryName').isString().withMessage('Category Name must be a string'),
+    check('CategoryId').isString().withMessage('Category ID must be a string'),
+];
 
 const showfunction = async (req, res) => {
-    const ans = await connection.query('SELECT * FROM product_info')
-        .catch(err => { console.log(err); })
-    res.send(ans[0])
-}
-const addfunction = async (req, res) => {
+    try {
+        const ans = await connection.query('SELECT * FROM product_info');
+        res.send(ans[0]);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Server Error');
+    }
+};
 
-    const id = req.body.id
-    const productId = req.body.productId
-    const productName = req.body.productName
-    const CategoryName = req.body.CategoryName
-    const CategoryId = req.body.CategoryId
+const addfunction = [
+    ...validateProduct,
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
+        const { id, productId, productName, CategoryName, CategoryId } = req.body;
 
+        try {
+            await connection.query(
+                'INSERT INTO product_info (id, productId, productName, CategoryName, CategoryId) VALUES (?, ?, ?, ?, ?)',
+                [id, productId, productName, CategoryName, CategoryId]
+            );
+            res.send('Success');
+        } catch (err) {
+            console.log(err);
+            res.status(500).send('Server Error');
+        }
+    },
+];
 
-    const ans = await connection.query(`INSERT INTO product_info ( id, productId, productName, CategoryName, CategoryId) VALUES (?,?,?,?,?)  `, [id, productId, productName, CategoryName, CategoryId])
-
-        .catch(err => { console.log(err); })
-    // res.send(console.log(req.body) )
-
-    // res.send(console.log('sucsses'))
-}
 const showbyid = async (req, res) => {
-
-    const ans = await connection.query("SELECT id, productId, productName, CategoryName, CategoryId FROM product_info WHERE id=?", [req.params.id])
-        .catch(err => { console.log(err); })
-    res.send(ans[0])
-}
+    try {
+        const ans = await connection.query(
+            'SELECT id, productId, productName, CategoryName, CategoryId FROM product_info WHERE id=?',
+            [req.params.id]
+        );
+        res.send(ans[0]);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Server Error');
+    }
+};
 
 const deletefunction = async (req, res) => {
-    const id = req.params.id
-    res.send(console.log(id))
-    const ans = await connection.query("DELETE FROM product_info WHERE id=?", [id])
-}
+    const id = req.params.id;
+    try {
+        await connection.query('DELETE FROM product_info WHERE id=?', [id]);
+        res.send(`Product with ID ${id} deleted successfully`);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Server Error');
+    }
+};
 
-const updatefunction = async (req, res) => {
-    // const id = req.params.id
-    const productId = req.body.productId
-    const productName = req.body.productName
-    const CategoryName = req.body.CategoryName
-    const CategoryId = req.body.CategoryId
-    const querytwo = `UPDATE \`product_info\` SET \`productId\`='${productId}', \`productName\`='${productName}', \`CategoryName\`='${CategoryName}', \`CategoryId\`='${CategoryId}' WHERE id = 2`
-    const query = "UPDATE product_info SET productId = ?, productName = ?, categoryName = ?, categoryId = ? WHERE id = ?"
-    const ans = await connection.query(query, [productId, productName, CategoryName, CategoryId, req.params.id])
-    // const ans = await connection.query(querytwo)
-    // res.send(console.log(query,querytwo))
+const updatefunction = [
+    ...validateProduct,
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
+        const { productId, productName, CategoryName, CategoryId } = req.body;
 
-}
-
+        try {
+            await connection.query(
+                'UPDATE product_info SET productId = ?, productName = ?, CategoryName = ?, CategoryId = ? WHERE id = ?',
+                [productId, productName, CategoryName, CategoryId, req.params.id]
+            );
+            res.send('Update successful');
+        } catch (err) {
+            console.log(err);
+            res.status(500).send('Server Error');
+        }
+    },
+];
 
 export { showfunction, addfunction, deletefunction, showbyid, updatefunction };
